@@ -6,228 +6,349 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from datetime import datetime
-import random
 
 # ==================== PAGE CONFIGURATION ====================
 st.set_page_config(
-    page_title="Bookends | AI Book Recommendation",
-    page_icon="📚",
+    page_title="Bookends | Your Storybook Adventure",
+    page_icon="📖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ==================== CUSTOM CSS FOR PROFESSIONAL LOOK ====================
+# ==================== STORYBOOK CSS ====================
 st.markdown("""
 <style>
-    /* Import Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    /* Import storybook fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
     
-    /* Global Styles */
-    * {
-        font-family: 'Inter', sans-serif;
+    /* Main container - warm parchment background */
+    .stApp {
+        background: linear-gradient(135deg, #fdf6e3 0%, #f5e6d3 100%);
     }
     
-    /* Main container styling */
-    .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    }
-    
-    /* Header styling */
+    /* Header - magical storybook style */
     .main-header {
         text-align: center;
-        padding: 3rem 2rem;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 100%);
+        border-radius: 30px;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        animation: fadeIn 0.8s ease-in;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        border: 3px solid #d4a574;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: "✨";
+        position: absolute;
+        top: 10px;
+        left: 20px;
+        font-size: 2rem;
+        opacity: 0.3;
+    }
+    
+    .main-header::after {
+        content: "✨";
+        position: absolute;
+        bottom: 10px;
+        right: 20px;
+        font-size: 2rem;
+        opacity: 0.3;
     }
     
     .main-header h1 {
-        color: white;
+        color: #f5e6d3;
         margin: 0;
-        font-size: 2.5rem;
+        font-family: 'Cinzel', serif;
+        font-size: 2.8rem;
         font-weight: 700;
-        letter-spacing: -0.5px;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        letter-spacing: 2px;
     }
     
     .main-header p {
-        color: rgba(255,255,255,0.9);
-        margin-top: 0.5rem;
+        color: #e8d5b7;
+        margin-top: 0.8rem;
+        font-family: 'Quicksand', sans-serif;
         font-size: 1.1rem;
+        font-style: italic;
     }
     
-    /* Card styling */
-    .recommendation-card {
-        background: white;
-        padding: 1rem 1.2rem;
-        border-radius: 12px;
-        margin: 0.7rem 0;
-        border: 1px solid #e0e7ff;
+    /* Storybook card */
+    .story-card {
+        background: #fffef7;
+        padding: 1.2rem 1.5rem;
+        border-radius: 20px;
+        margin: 0.8rem 0;
+        border: 2px solid #e8d5b7;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        position: relative;
     }
     
-    .recommendation-card:hover {
-        transform: translateX(8px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-left: 4px solid #3b82f6;
-        background: linear-gradient(90deg, #ffffff 0%, #f8fafc 100%);
+    .story-card:hover {
+        transform: translateY(-5px) rotate(0.5deg);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        border-color: #c4a47a;
     }
     
-    /* Button styling */
+    .story-card h4 {
+        color: #2c1810;
+        font-family: 'Cinzel', serif;
+        margin: 0 0 8px 0;
+        font-size: 1.2rem;
+    }
+    
+    .story-card p {
+        color: #4a3728;
+        font-family: 'Quicksand', sans-serif;
+        margin: 5px 0;
+    }
+    
+    /* Button styling - magical */
     .stButton > button {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        border: none;
+        background: linear-gradient(135deg, #8b5e3c 0%, #6b3e1c 100%);
+        color: #fdf6e3;
+        border: 2px solid #d4a574;
         padding: 0.6rem 2rem;
-        border-radius: 12px;
-        font-weight: 500;
-        font-size: 0.95rem;
+        border-radius: 40px;
+        font-weight: 600;
+        font-family: 'Quicksand', sans-serif;
+        font-size: 1rem;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59,130,246,0.3);
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 6px 15px rgba(107, 62, 28, 0.4);
+        background: linear-gradient(135deg, #9b6e4c 0%, #7b4e2c 100%);
+        border-color: #e8c49a;
+        color: white;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    /* Sidebar - vintage book style */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2c1810 0%, #1a0f08 100%);
+        border-right: 3px solid #d4a574;
     }
     
-    /* Input field styling */
+    [data-testid="stSidebar"] * {
+        color: #f5e6d3 !important;
+        font-family: 'Quicksand', sans-serif;
+    }
+    
+    [data-testid="stSidebar"] .stRadio label {
+        font-size: 1rem;
+        padding: 0.5rem;
+    }
+    
+    /* Input fields - readable */
     .stTextInput > div > div > input {
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
-        padding: 0.5rem 1rem;
-        transition: all 0.3s ease;
+        border-radius: 25px;
+        border: 2px solid #d4a574;
+        background: #fffef7;
+        color: #2c1810;
+        padding: 0.6rem 1.2rem;
+        font-family: 'Quicksand', sans-serif;
     }
     
     .stTextInput > div > div > input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        border-color: #8b5e3c;
+        box-shadow: 0 0 0 3px rgba(139, 94, 60, 0.1);
     }
     
-    /* Select box styling */
+    .stTextInput > div > div > input::placeholder {
+        color: #c4a47a;
+    }
+    
+    /* Select box */
     .stSelectbox > div > div {
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
+        border-radius: 25px;
+        border: 2px solid #d4a574;
+        background: #fffef7;
+        color: #2c1810;
     }
     
-    /* Metric cards */
+    /* Tabs - storybook style */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1rem;
+        background: rgba(255, 254, 247, 0.8);
+        padding: 0.5rem;
+        border-radius: 50px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 30px;
+        padding: 0.5rem 1.5rem;
+        font-family: 'Cinzel', serif;
+        font-weight: 600;
+        color: #4a3728;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #8b5e3c 0%, #6b3e1c 100%);
+        color: #fdf6e3 !important;
+    }
+    
+    /* Metrics - vintage cards */
     .metric-card {
-        background: white;
+        background: #fffef7;
         padding: 1rem;
-        border-radius: 12px;
+        border-radius: 15px;
         text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 2px solid #e8d5b7;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
         transition: transform 0.3s ease;
     }
     
     .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        border-color: #c4a47a;
     }
     
-    /* Chat message styling */
+    .metric-card h3 {
+        color: #8b5e3c;
+        font-family: 'Cinzel', serif;
+        margin: 0;
+        font-size: 1.8rem;
+    }
+    
+    .metric-card p {
+        color: #4a3728;
+        margin: 5px 0 0 0;
+        font-family: 'Quicksand', sans-serif;
+    }
+    
+    /* Chat messages */
     .chat-message-user {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
+        background: linear-gradient(135deg, #8b5e3c 0%, #6b3e1c 100%);
+        color: #fdf6e3;
         padding: 0.8rem 1.2rem;
-        border-radius: 18px;
-        border-bottom-right-radius: 4px;
+        border-radius: 20px;
+        border-bottom-right-radius: 5px;
         max-width: 70%;
         margin-left: auto;
         margin-bottom: 1rem;
+        font-family: 'Quicksand', sans-serif;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .chat-message-bot {
-        background: #f1f5f9;
-        color: #1e293b;
+        background: #fffef7;
+        color: #2c1810;
         padding: 0.8rem 1.2rem;
-        border-radius: 18px;
-        border-bottom-left-radius: 4px;
+        border-radius: 20px;
+        border-bottom-left-radius: 5px;
         max-width: 70%;
         margin-right: auto;
         margin-bottom: 1rem;
+        font-family: 'Quicksand', sans-serif;
+        border: 2px solid #e8d5b7;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
-    /* Expander styling */
+    /* Welcome banner */
+    .welcome-banner {
+        background: linear-gradient(135deg, #fffef7 0%, #fdf0e0 100%);
+        padding: 1.5rem;
+        border-radius: 25px;
+        margin-bottom: 1.5rem;
+        border: 2px solid #e8d5b7;
+        text-align: center;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    }
+    
+    .welcome-banner h2 {
+        color: #8b5e3c;
+        font-family: 'Cinzel', serif;
+        margin: 0;
+    }
+    
+    .welcome-banner p {
+        color: #4a3728;
+        font-family: 'Quicksand', sans-serif;
+        margin: 8px 0 0 0;
+    }
+    
+    /* Expander */
     .streamlit-expanderHeader {
-        background: #f8fafc;
-        border-radius: 12px;
-        font-weight: 500;
+        background: #fffef7;
+        border-radius: 20px;
+        border: 2px solid #e8d5b7;
+        color: #2c1810;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 600;
     }
     
-    /* Tab styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 1rem;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 12px;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
-    }
-    
-    /* Animations */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .fade-in {
-        animation: fadeIn 0.5s ease-in;
+    /* Info boxes */
+    .stAlert {
+        border-radius: 15px;
+        font-family: 'Quicksand', sans-serif;
     }
     
     /* Footer */
     .footer {
         text-align: center;
         padding: 2rem;
-        color: #64748b;
-        font-size: 0.85rem;
+        color: #8b5e3c;
+        font-family: 'Quicksand', sans-serif;
+        font-size: 0.9rem;
         margin-top: 2rem;
-        border-top: 1px solid #e2e8f0;
+        border-top: 2px solid #e8d5b7;
     }
     
-    /* Welcome banner */
-    .welcome-banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin-bottom: 1.5rem;
-        color: white;
-        text-align: center;
+    /* Headers */
+    h1, h2, h3 {
+        color: #2c1810;
+        font-family: 'Cinzel', serif;
     }
     
-    /* Stats container */
-    .stats-container {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    h1 {
+        font-size: 2.2rem;
+    }
+    
+    h2 {
+        font-size: 1.8rem;
+        border-left: 4px solid #8b5e3c;
+        padding-left: 1rem;
+    }
+    
+    h3 {
+        font-size: 1.4rem;
+    }
+    
+    /* Regular text */
+    p, li, label {
+        color: #4a3728;
+        font-family: 'Quicksand', sans-serif;
+    }
+    
+    /* Animations */
+    @keyframes pageFlip {
+        0% {
+            opacity: 0;
+            transform: rotateY(-10deg);
+        }
+        100% {
+            opacity: 1;
+            transform: rotateY(0deg);
+        }
+    }
+    
+    .fade-in {
+        animation: pageFlip 0.6s ease-out;
+    }
+    
+    /* Decorative elements */
+    .decorative-leaf {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        opacity: 0.3;
+        font-size: 3rem;
+        pointer-events: none;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -250,7 +371,7 @@ def load_books_data():
                 break
         
         if books is None:
-            return create_sample_books_data()
+            return create_storybook_data()
         
         books = books.dropna(subset=['Book Title', 'Author', 'Genre'])
         books['Book Title'] = books['Book Title'].astype(str)
@@ -260,10 +381,10 @@ def load_books_data():
         
         return books
     except Exception as e:
-        return create_sample_books_data()
+        return create_storybook_data()
 
-def create_sample_books_data():
-    """Create enhanced sample book data for demo"""
+def create_storybook_data():
+    """Create enchanting storybook data"""
     sample_data = {
         'Book Title': [
             'Atomic Habits', 'The Psychology of Money', 'Deep Work', 
@@ -272,7 +393,8 @@ def create_sample_books_data():
             'Sapiens', 'Becoming', 'Educated', 'The Alchemist',
             'Harry Potter and the Sorcerer\'s Stone', 'The Hobbit', '1984',
             'Dune', 'Pride and Prejudice', 'The Great Gatsby',
-            'To Kill a Mockingbird', 'The Catcher in the Rye'
+            'To Kill a Mockingbird', 'The Catcher in the Rye',
+            'The Little Prince', 'Alice in Wonderland'
         ],
         'Author': [
             'James Clear', 'Morgan Housel', 'Cal Newport', 
@@ -281,7 +403,8 @@ def create_sample_books_data():
             'Michelle Obama', 'Tara Westover', 'Paulo Coelho',
             'J.K. Rowling', 'J.R.R. Tolkien', 'George Orwell',
             'Frank Herbert', 'Jane Austen', 'F. Scott Fitzgerald',
-            'Harper Lee', 'J.D. Salinger'
+            'Harper Lee', 'J.D. Salinger',
+            'Antoine de Saint-Exupéry', 'Lewis Carroll'
         ],
         'Genre': [
             'self-help', 'finance', 'productivity', 
@@ -290,9 +413,9 @@ def create_sample_books_data():
             'memoir', 'memoir', 'fiction',
             'fantasy', 'fantasy', 'fiction',
             'sci-fi', 'romance', 'classic',
-            'classic', 'classic'
-        ],
-        'Rating': [4.8, 4.6, 4.7, 4.5, 4.4, 4.5, 4.3, 4.6, 4.7, 4.8, 4.6, 4.5, 4.9, 4.8, 4.7, 4.6, 4.5, 4.4, 4.8, 4.3]
+            'classic', 'classic',
+            'children', 'fantasy'
+        ]
     }
     books = pd.DataFrame(sample_data)
     books['combined'] = books['Book Title'] + " " + books['Author'] + " " + books['Genre']
@@ -319,15 +442,10 @@ def recommend_by_title(title, books, cosine_sim, top_n=5):
         
         recommendations = []
         for i, score in sim_scores:
-            book_title = books['Book Title'].iloc[i]
-            author = books['Author'].iloc[i]
-            genre = books['Genre'].iloc[i]
-            rating = books.get('Rating', [4.5]*len(books)).iloc[i]
             recommendations.append({
-                'title': book_title,
-                'author': author,
-                'genre': genre,
-                'rating': rating,
+                'title': books['Book Title'].iloc[i],
+                'author': books['Author'].iloc[i],
+                'genre': books['Genre'].iloc[i],
                 'similarity': score
             })
         
@@ -352,7 +470,6 @@ def recommend_by_genre(genre, books, top_n=6):
             'title': row['Book Title'],
             'author': row['Author'],
             'genre': row['Genre'],
-            'rating': row.get('Rating', 4.5),
             'similarity': 1.0
         })
     
@@ -383,26 +500,6 @@ def vibe_recommend(text, books, top_n=6):
             'title': row['Book Title'],
             'author': row['Author'],
             'genre': row['Genre'],
-            'rating': row.get('Rating', 4.5),
-            'similarity': 1.0
-        })
-    
-    return recommendations
-
-def get_popular_books(books, top_n=6):
-    """Get popular books based on rating"""
-    if 'Rating' in books.columns:
-        popular = books.nlargest(top_n, 'Rating')
-    else:
-        popular = books.head(top_n)
-    
-    recommendations = []
-    for _, row in popular.iterrows():
-        recommendations.append({
-            'title': row['Book Title'],
-            'author': row['Author'],
-            'genre': row['Genre'],
-            'rating': row.get('Rating', 4.5),
             'similarity': 1.0
         })
     
@@ -411,23 +508,22 @@ def get_popular_books(books, top_n=6):
 # ==================== FAQ FUNCTIONS ====================
 FAQ_DATA = [
     {"q": "where is your location", 
-     "a": "📍 **Dubai Digital Park**, Silicon Oasis Building A3, Lower Ground\n\n🕐 Open daily 10am–10pm"},
+     "a": "📖 **Our Enchanted Location**\n\nDubai Digital Park, Silicon Oasis Building A3, Lower Ground\n\n🕐 Open daily 10am–10pm\n\nCome visit our magical book realm!"},
+    
     {"q": "can i sell books", 
-     "a": "✅ **Yes, absolutely!**\n\nWe accept books in good condition. You'll receive store credit or cash once your books are sold."},
+     "a": "✨ **Yes, dear reader!**\n\nWe welcome your beloved books into our collection. You'll receive store credit or cash once your books find new homes."},
+    
     {"q": "free delivery", 
-     "a": "🚚 **Free delivery** for orders above **AED 180**\n\nStandard delivery takes 2-3 business days."},
+     "a": "📚 **Free Delivery Magic**\n\nFree delivery for all orders above AED 180! Your books will arrive in 2-3 business days."},
+    
     {"q": "delivery cost", 
-     "a": "💰 **Delivery fees:**\n• Dubai/Sharjah/Ajman: AED 19\n• Other Emirates: AED 24\n• Free for orders above AED 180"},
+     "a": "🚚 **Delivery Enchantment**\n\n• Dubai/Sharjah/Ajman: AED 19\n• Other Emirates: AED 24\n• Free for orders above AED 180"},
+    
     {"q": "pick up books", 
-     "a": "📦 **Pickup service:**\n• AED 25 up to 5kg\n• AED 2 per extra kg\n• Available during store hours"},
+     "a": "📦 **Pickup Adventure**\n\n• AED 25 up to 5kg\n• AED 2 per extra kg\n• Available during our magical hours"},
+    
     {"q": "operating hours", 
-     "a": "🕐 **Store Hours:**\n• Monday - Sunday: 10am - 10pm\n• Open 7 days a week!"},
-    {"q": "how to use credit", 
-     "a": "🎯 **Using your credit:**\nSimply mention your account during checkout (online or in-store), and we'll deduct it manually."},
-    {"q": "can i cancel order", 
-     "a": "✅ **Yes**, you can cancel your order within 24 hours of purchase. Please contact us with your order number."},
-    {"q": "return policy", 
-     "a": "🔄 **14-day return policy**\n\nBooks can be returned within 14 days with original receipt. Books must be in original condition."}
+     "a": "🕐 **When Our Doors Are Open**\n\nMonday - Sunday: 10am - 10pm\nOpen 7 days a week for your literary adventures!"}
 ]
 
 @st.cache_resource
@@ -446,113 +542,81 @@ def get_faq_answer(user_input, vectorizer, faq_matrix, questions):
         index = similarity.argmax()
         
         if similarity[0][index] < 0.2:
-            return "🤔 I couldn't find an exact match. Try asking about:\n• Location & hours\n• Delivery & pickup\n• Selling books\n• Returns & cancellations"
+            return "📖 *Turns the page thoughtfully...*\n\nI couldn't find an exact answer. Try asking about:\n• 📍 Our location\n• 🚚 Delivery\n• 💫 Selling books\n• 🕐 Store hours"
         
         for item in FAQ_DATA:
             if item["q"] == questions[index]:
                 return item["a"]
         
-        return "Please visit our store or contact support for assistance."
+        return "Please visit our enchanted store or contact our guardians for assistance."
     except Exception as e:
         return f"Error: {str(e)}"
 
 # ==================== UI COMPONENTS ====================
-def display_recommendations(recommendations, title="Recommended Books"):
-    """Display recommendations in a beautiful grid"""
+def display_recommendations(recommendations, title="✨ Tales We Found For You"):
+    """Display recommendations in beautiful storybook cards"""
     if not recommendations:
-        st.warning("No recommendations found. Try different criteria!")
+        st.info("📖 *No tales found... Try a different chapter!*")
         return
     
     st.markdown(f"### {title}")
     
-    # Create columns for grid layout
     cols = st.columns(2)
     
     for idx, book in enumerate(recommendations):
         with cols[idx % 2]:
-            # Rating stars
-            rating_stars = "⭐" * int(book['rating']) + "☆" * (5 - int(book['rating']))
-            
+            similarity_percent = int(book['similarity'] * 100) if book['similarity'] < 1 else 85
             st.markdown(f"""
-            <div class="recommendation-card">
-                <h4 style="margin: 0 0 5px 0; color: #1e293b;">📖 {book['title']}</h4>
-                <p style="margin: 5px 0; color: #64748b;">✍️ by {book['author']}</p>
-                <p style="margin: 5px 0;">
-                    <span style="background: #e0e7ff; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">🏷️ {book['genre'].title()}</span>
-                    <span style="margin-left: 8px;">{rating_stars} {book['rating']}</span>
-                </p>
+            <div class="story-card">
+                <h4>📚 {book['title']}</h4>
+                <p>✍️ <em>by {book['author']}</em></p>
+                <p>🏷️ <em>{book['genre'].title()} • Match: {similarity_percent}%</em></p>
             </div>
             """, unsafe_allow_html=True)
 
-def display_welcome_section():
-    """Display welcome banner with stats"""
-    col1, col2 = st.columns([2, 1])
+def display_storybook_stats(books):
+    """Display statistics in storybook style"""
+    st.markdown("### 📖 Our Library's Tale")
     
-    with col1:
-        st.markdown("""
-        <div class="welcome-banner">
-            <h2>✨ Welcome to Bookends AI</h2>
-            <p>Your intelligent companion for discovering amazing books</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        current_hour = datetime.now().hour
-        if current_hour < 12:
-            greeting = "🌅 Good Morning!"
-        elif current_hour < 17:
-            greeting = "☀️ Good Afternoon!"
-        else:
-            greeting = "🌙 Good Evening!"
-        
-        st.markdown(f"""
-        <div class="stats-container" style="text-align: center;">
-            <h3>{greeting}</h3>
-            <p style="font-size: 0.9rem;">Ready to find your next great read?</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-def display_quick_stats(books):
-    """Display quick statistics in a row"""
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>📚 {len(books)}</h3>
-            <p>Total Books</p>
+            <h3>{len(books)}</h3>
+            <p>📚 Tales Within</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>✍️ {books['Author'].nunique()}</h3>
-            <p>Authors</p>
+            <h3>{books['Author'].nunique()}</h3>
+            <p>✍️ Storytellers</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>🏷️ {books['Genre'].nunique()}</h3>
-            <p>Genres</p>
+            <h3>{books['Genre'].nunique()}</h3>
+            <p>🏷️ Genres</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
-        avg_rating = books.get('Rating', pd.Series([4.5]*len(books))).mean()
+        most_common = books['Genre'].mode()[0].title()
         st.markdown(f"""
         <div class="metric-card">
-            <h3>⭐ {avg_rating:.1f}</h3>
-            <p>Avg Rating</p>
+            <h3>{most_common}</h3>
+            <p>🌟 Most Popular</p>
         </div>
         """, unsafe_allow_html=True)
 
 # ==================== MAIN APP ====================
 def main():
     # Load data
-    with st.spinner("📚 Loading your library..."):
+    with st.spinner("📖 Opening the magical book..."):
         books = load_books_data()
     
     if books is not None and not books.empty:
@@ -560,32 +624,65 @@ def main():
         _, _, cosine_sim = initialize_recommender(books)
         faq_vectorizer, faq_matrix, faq_questions = initialize_faq_bot()
         
-        # Welcome section
-        display_welcome_section()
+        # Storybook Header
+        st.markdown("""
+        <div class="main-header">
+            <h1>📖 The Enchanted Bookshelf</h1>
+            <p>Where every book holds a magical story waiting to be discovered...</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Quick stats
-        display_quick_stats(books)
+        # Welcome message
+        current_hour = datetime.now().hour
+        if current_hour < 12:
+            greeting = "Good morning, dear reader"
+        elif current_hour < 17:
+            greeting = "Good afternoon, story seeker"
+        else:
+            greeting = "Good evening, book wanderer"
         
-        # Sidebar navigation
+        st.markdown(f"""
+        <div class="welcome-banner">
+            <h2>✨ {greeting} ✨</h2>
+            <p>Welcome to your magical book realm. Let me help you find your next adventure...</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display stats
+        display_storybook_stats(books)
+        
+        # Sidebar - Storybook navigation
         with st.sidebar:
-            st.image("https://cdn-icons-png.flaticon.com/512/1674/1674816.png", width=80)
-            st.markdown("### 📚 Bookends AI")
+            st.markdown("### 🏰 Navigation")
             st.markdown("---")
             
             menu = st.radio(
-                "Navigation",
-                ["🏠 Home", "🔍 Book Recommender", "💬 FAQ Assistant", "📊 Insights", "ℹ️ About"],
+                "Choose your path:",
+                ["🏠 Home", "🔍 Find Tales", "💬 Ask the Sage", "📊 Library Map", "📜 About This Realm"],
                 index=0
             )
             
             st.markdown("---")
-            st.caption("Made with ❤️ for book lovers")
+            st.markdown("*✨ Let the stories guide you...*")
         
         # Home Page
         if menu == "🏠 Home":
-            st.markdown("### 🔥 Popular Picks This Week")
-            popular = get_popular_books(books)
-            display_recommendations(popular, "")
+            st.markdown("## 🌟 Featured Tales")
+            st.markdown("*Popular stories our readers love...*")
+            
+            # Get some popular recommendations
+            popular_titles = books['Book Title'].sample(min(6, len(books))).tolist()
+            recommendations = []
+            for title in popular_titles:
+                idx = books[books['Book Title'] == title].index[0]
+                recommendations.append({
+                    'title': title,
+                    'author': books['Author'].iloc[idx],
+                    'genre': books['Genre'].iloc[idx],
+                    'similarity': 0.85
+                })
+            
+            display_recommendations(recommendations, "✨ Treasures From Our Shelves")
             
             st.markdown("---")
             
@@ -593,141 +690,129 @@ def main():
             
             with col1:
                 st.markdown("""
-                ### 🎯 How It Works
+                ### 🎭 How Our Magic Works
                 
-                1. **Choose a recommendation method**
-                   - By Genre
-                   - By Book Title
-                   - By Vibe/Description
+                1. **Choose your path** - By genre, title, or mood
+                2. **Our magical scrolls** search through tales
+                3. **Discover** your next great adventure
                 
-                2. **Get AI-powered suggestions**
-                   - Smart similarity matching
-                   - Personalized recommendations
-                
-                3. **Discover your next favorite book!**
+                *Each recommendation is crafted with care...*
                 """)
             
             with col2:
                 st.markdown("""
-                ### ✨ Features
+                ### ✨ Magical Features
                 
-                - 🤖 **AI-Powered Recommendations**
-                - 💬 **Smart FAQ Chatbot**
-                - 📊 **Interactive Dashboard**
-                - ⭐ **Ratings & Reviews**
-                - 🎨 **Beautiful Interface**
+                - 🔮 **Wise Sage** - Ask any question
+                - 📚 **Genre Portals** - Explore by category  
+                - 🎯 **Similar Spells** - Find books like your favorites
+                - 💭 **Mood Magic** - Search by feeling
                 """)
         
-        # Book Recommender
-        elif menu == "🔍 Book Recommender":
-            st.markdown("## 🔍 Find Your Perfect Book")
+        # Find Tales (Book Recommender)
+        elif menu == "🔍 Find Tales":
+            st.markdown("## 🔍 Seek Your Next Adventure")
+            st.markdown("*Let me help you discover a tale that calls to your heart...*")
             
-            # Create tabs for different recommendation types
-            tab1, tab2, tab3 = st.tabs(["📖 By Genre", "🎯 By Title", "💭 By Vibe"])
+            tab1, tab2, tab3 = st.tabs(["📚 By Genre Portal", "🎯 By Beloved Tale", "💭 By Magical Mood"])
             
             with tab1:
-                st.markdown("### Explore by Genre")
-                col1, col2 = st.columns([1, 2])
+                st.markdown("### Enter a genre portal")
                 
-                with col1:
-                    genres = books['Genre'].unique()
-                    genre_options = sorted([g.title() for g in genres])
-                    selected_genre = st.selectbox("Select a genre:", genre_options)
+                genres = sorted(books['Genre'].unique())
+                genre_options = [g.title() for g in genres]
+                selected_genre = st.selectbox("Choose your portal:", genre_options)
                 
-                with col2:
-                    if st.button("🔍 Find Books", key="genre_btn", use_container_width=True):
-                        with st.spinner("Finding books for you..."):
-                            results = recommend_by_genre(selected_genre.lower(), books)
-                            display_recommendations(results, f"Top {selected_genre} Books")
+                if st.button("🔮 Enter the Portal", key="genre_btn"):
+                    with st.spinner("Opening the portal..."):
+                        results = recommend_by_genre(selected_genre.lower(), books)
+                        display_recommendations(results, f"✨ Tales from the {selected_genre} Realm")
             
             with tab2:
-                st.markdown("### Find Similar Books")
-                col1, col2 = st.columns([1, 2])
+                st.markdown("### Find tales similar to a beloved story")
                 
-                with col1:
-                    titles = books['Book Title'].tolist()
-                    selected_title = st.selectbox("Select a book you love:", titles)
+                titles = books['Book Title'].tolist()
+                selected_title = st.selectbox("Which tale do you love?", titles)
                 
-                with col2:
-                    if st.button("🔍 Find Similar", key="title_btn", use_container_width=True):
-                        with st.spinner("Finding similar books..."):
-                            results = recommend_by_title(selected_title, books, cosine_sim)
-                            display_recommendations(results, f"Books similar to '{selected_title}'")
+                if st.button("🔮 Find Similar Tales", key="title_btn"):
+                    with st.spinner("Searching through ancient scrolls..."):
+                        results = recommend_by_title(selected_title, books, cosine_sim)
+                        display_recommendations(results, f"📚 Tales similar to '{selected_title}'")
             
             with tab3:
-                st.markdown("### Describe Your Vibe")
-                st.caption("Tell me what you're in the mood for...")
+                st.markdown("### Describe the mood you seek")
+                st.caption("*What feelings do you want your next book to bring?*")
                 
-                vibe_examples = ["inspiring stories", "page-turners", "mind-blowing ideas", "emotional journeys"]
-                selected_vibe = st.selectbox("Try an example:", ["Choose an example..."] + vibe_examples)
+                mood_examples = ["inspiring", "mysterious", "heartwarming", "adventurous", "magical"]
+                selected_mood = st.selectbox("Try a magical mood:", ["Choose a feeling..."] + mood_examples)
                 
-                vibe_text = st.text_area("Or describe in your own words:", 
-                                        value=selected_vibe if selected_vibe != "Choose an example..." else "",
-                                        placeholder="e.g., 'books that make me think about success' or 'adventurous stories with magic'")
+                mood_text = st.text_area("Or describe in your own words:", 
+                                        value=selected_mood if selected_mood != "Choose a feeling..." else "",
+                                        placeholder="e.g., 'tales that make my heart soar' or 'mysterious journeys through enchanted lands'")
                 
-                if st.button("🔍 Find Matching Books", key="vibe_btn", use_container_width=True):
-                    if vibe_text:
-                        with st.spinner("Finding books that match your vibe..."):
-                            results = vibe_recommend(vibe_text, books)
-                            display_recommendations(results, "Books Matching Your Vibe")
+                if st.button("🔮 Seek by Mood", key="vibe_btn"):
+                    if mood_text:
+                        with st.spinner("Listening to your heart's desire..."):
+                            results = vibe_recommend(mood_text, books)
+                            display_recommendations(results, "✨ Tales That Match Your Mood")
                     else:
-                        st.warning("Please describe what you're looking for!")
+                        st.warning("Please share the mood you're seeking...")
         
-        # FAQ Assistant
-        elif menu == "💬 FAQ Assistant":
-            st.markdown("## 💬 Ask Me Anything")
-            st.markdown("Get instant answers about our store, policies, and services")
+        # Ask the Sage (FAQ Chatbot)
+        elif menu == "💬 Ask the Sage":
+            st.markdown("## 💬 The Wise Sage")
+            st.markdown("*Our ancient guardian knows all about our realm... Ask anything!*")
             
             col1, col2 = st.columns([1, 2])
             
             with col1:
-                st.markdown("### Popular Questions")
-                faq_questions = [item["q"] for item in FAQ_DATA]
-                quick_q = st.selectbox("Quick questions:", faq_questions)
-                if st.button("Ask This Question"):
-                    answer = get_faq_answer(quick_q, faq_vectorizer, faq_matrix, faq_questions)
-                    st.info(answer)
+                st.markdown("### Common Questions")
+                st.markdown("""
+                Travelers often ask:
+                - 📍 Where is your location?
+                - 📚 Can I sell books?
+                - 🚚 Do you offer free delivery?
+                - 🕐 What are your hours?
+                """)
             
             with col2:
-                st.markdown("### Chat with Us")
+                st.markdown("### Speak with the Sage")
                 
                 if "messages" not in st.session_state:
                     st.session_state.messages = [{
                         "role": "assistant",
-                        "content": "👋 Hi! I'm Bookends AI Assistant. Ask me anything about our store, delivery, selling books, or store policies!"
+                        "content": "✨ Greetings, traveler! I am the guardian of this enchanted bookshelf. What wisdom do you seek today? ✨"
                     }]
                 
-                # Display chat history
                 for msg in st.session_state.messages:
                     if msg["role"] == "user":
-                        st.markdown(f'<div class="chat-message-user">🧑 {msg["content"]}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="chat-message-user">🧙‍♂️ {msg["content"]}</div>', unsafe_allow_html=True)
                     else:
-                        st.markdown(f'<div class="chat-message-bot">🤖 {msg["content"]}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="chat-message-bot">📖 {msg["content"]}</div>', unsafe_allow_html=True)
                 
-                # Chat input
-                user_question = st.text_input("Type your question:", key="faq_input", placeholder="e.g., Where is your location?")
+                user_question = st.text_input("Your question:", key="faq_input", placeholder="e.g., Where is your enchanted location?")
                 
-                if st.button("Send", key="send_btn"):
+                if st.button("Ask the Sage", key="send_btn"):
                     if user_question:
                         st.session_state.messages.append({"role": "user", "content": user_question})
-                        with st.spinner("Thinking..."):
+                        with st.spinner("The sage ponders..."):
                             answer = get_faq_answer(user_question, faq_vectorizer, faq_matrix, faq_questions)
                             st.session_state.messages.append({"role": "assistant", "content": answer})
                         st.rerun()
                 
-                if st.button("🗑️ Clear Chat History"):
+                if st.button("🗑️ Clear the Scroll"):
                     st.session_state.messages = [{
                         "role": "assistant",
-                        "content": "👋 Hi! I'm Bookends AI Assistant. How can I help you today?"
+                        "content": "✨ Greetings, traveler! I am the guardian of this enchanted bookshelf. What wisdom do you seek today? ✨"
                     }]
                     st.rerun()
         
-        # Insights Dashboard
-        elif menu == "📊 Insights":
-            st.markdown("## 📊 Library Insights")
-            st.markdown("Discover fascinating statistics about our collection")
+        # Library Map (Dashboard)
+        elif menu == "📊 Library Map":
+            st.markdown("## 📊 Map of Our Library")
+            st.markdown("*Visualizing the treasures within our collection...*")
             
-            tab1, tab2 = st.tabs(["📈 Genre Distribution", "👨‍💼 Top Authors"])
+            tab1, tab2 = st.tabs(["🏷️ Genre Landscape", "✍️ Storyteller's Circle"])
             
             with tab1:
                 col1, col2 = st.columns(2)
@@ -735,123 +820,119 @@ def main():
                 with col1:
                     genre_counts = books['Genre'].value_counts()
                     fig, ax = plt.subplots(figsize=(8, 6))
-                    colors = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff']
+                    colors = ['#8b5e3c', '#a0704c', '#b8886c', '#c49a7a', '#d4aa8a', '#e4ba9a']
                     genre_counts.head(8).plot(kind='barh', ax=ax, color=colors)
-                    ax.set_xlabel("Number of Books", fontweight='bold')
-                    ax.set_title("Top Genres", fontweight='bold', size=14)
+                    ax.set_xlabel("Number of Books", fontweight='bold', color='#2c1810')
+                    ax.set_title("Our Enchanted Genres", fontweight='bold', size=14, color='#2c1810')
+                    ax.set_facecolor('#fffef7')
+                    fig.patch.set_facecolor('#fffef7')
                     ax.spines['top'].set_visible(False)
                     ax.spines['right'].set_visible(False)
+                    ax.tick_params(colors='#4a3728')
                     st.pyplot(fig)
                 
                 with col2:
                     fig2, ax2 = plt.subplots(figsize=(8, 8))
                     genre_counts.head(8).plot(kind='pie', ax=ax2, autopct='%1.1f%%', colors=colors)
                     ax2.set_ylabel("")
-                    ax2.set_title("Genre Distribution", fontweight='bold', size=14)
+                    ax2.set_title("Genre Distribution", fontweight='bold', size=14, color='#2c1810')
+                    ax2.set_facecolor('#fffef7')
+                    fig2.patch.set_facecolor('#fffef7')
+                    for text in ax2.texts:
+                        text.set_color('#2c1810')
                     st.pyplot(fig2)
             
             with tab2:
                 top_authors = books['Author'].value_counts().head(10)
                 fig3, ax3 = plt.subplots(figsize=(10, 6))
-                top_authors.plot(kind='bar', ax=ax3, color='#3b82f6')
-                ax3.set_xlabel("Author", fontweight='bold')
-                ax3.set_ylabel("Number of Books", fontweight='bold')
-                ax3.set_title("Most Prolific Authors", fontweight='bold', size=14)
-                ax3.tick_params(axis='x', rotation=45)
+                top_authors.plot(kind='bar', ax=ax3, color='#8b5e3c')
+                ax3.set_xlabel("Storyteller", fontweight='bold', color='#2c1810')
+                ax3.set_ylabel("Number of Tales", fontweight='bold', color='#2c1810')
+                ax3.set_title("Our Most Prolific Storytellers", fontweight='bold', size=14, color='#2c1810')
+                ax3.tick_params(axis='x', rotation=45, colors='#4a3728')
+                ax3.tick_params(axis='y', colors='#4a3728')
                 ax3.spines['top'].set_visible(False)
                 ax3.spines['right'].set_visible(False)
+                ax3.set_facecolor('#fffef7')
+                fig3.patch.set_facecolor('#fffef7')
                 st.pyplot(fig3)
-            
-            # Additional stats
-            st.markdown("---")
-            st.markdown("### 📊 Quick Facts")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                most_common_genre = books['Genre'].mode()[0]
-                st.metric("Most Popular Genre", most_common_genre.title())
-            with col2:
-                total_books = len(books)
-                st.metric("Total Collection", total_books)
-            with col3:
-                if 'Rating' in books.columns:
-                    highest_rated = books.loc[books['Rating'].idxmax(), 'Book Title']
-                    st.metric("Highest Rated", highest_rated[:20] + "...")
         
         # About
-        elif menu == "ℹ️ About":
-            st.markdown("## ℹ️ About Bookends AI")
+        elif menu == "📜 About This Realm":
+            st.markdown("## 📜 The Story of Our Realm")
             
             col1, col2 = st.columns([2, 1])
             
             with col1:
                 st.markdown("""
-                ### 📚 Your AI-Powered Book Companion
+                ### ✨ Welcome, Dear Reader
                 
-                Bookends AI uses cutting-edge machine learning to help you discover books you'll love.
+                Once upon a time, in the heart of Dubai's Silicon Oasis, a magical bookstore was born...
                 
-                #### 🤖 How It Works
+                **Bookends** is more than just a bookstore - it's a sanctuary for story lovers, a gathering place for dreamers, and a portal to countless adventures.
                 
-                1. **Content-Based Filtering**: We analyze book features (title, author, genre)
-                2. **TF-IDF Vectorization**: Converts text into numerical features for comparison
-                3. **Cosine Similarity**: Finds books most similar to your preferences
-                4. **Smart Ranking**: Presents recommendations in order of relevance
+                #### 🔮 Our Magical System
                 
-                #### ✨ Features
+                This enchanted AI uses ancient wisdom (and modern magic) to help you discover books:
                 
-                - **Smart Recommendations**: Find books by genre, title, or vibe
-                - **FAQ Chatbot**: Instant answers to common questions
-                - **Interactive Dashboard**: Visual insights about our collection
-                - **Beautiful Interface**: Modern, responsive design
+                1. **Content-Based Sorcery**: We analyze the essence of each tale
+                2. **TF-IDV Enchantment**: Ancient runes that understand text
+                3. **Cosine Similarity Magic**: Finds kindred spirits among books
+                4. **Wisdom Ranking**: Presents the most relevant adventures first
                 
-                #### 🏢 Visit Us
+                #### 🏰 Visit Our Physical Realm
                 
                 **Location:** Dubai Digital Park, Silicon Oasis Building A3, Lower Ground
                 
                 **Hours:** Daily, 10:00 AM - 10:00 PM
                 
                 **Contact:** support@bookends.ae
+                
+                #### ✨ Our Promise
+                
+                Every recommendation is crafted with care, every question answered with wisdom, and every reader treated like the hero of their own story.
                 """)
             
             with col2:
                 st.markdown("""
-                ### 🛠️ Tech Stack
+                ### 🛡️ Our Magical Tools
                 
-                - 🐍 **Python** 3.9+
-                - 🎨 **Streamlit** for UI
-                - 🤖 **Scikit-learn** for ML
-                - 📊 **Pandas/NumPy** for data
-                - 📈 **Matplotlib** for viz
-                
-                ---
-                
-                ### 📊 Version
-                
-                **Current Version:** 2.0
-                
-                **Last Updated:** December 2024
+                - 🐍 **Python** - Our wand
+                - 🎨 **Streamlit** - Our canvas
+                - 🤖 **Scikit-learn** - Our spellbook
+                - 📊 **Pandas** - Our library catalog
                 
                 ---
                 
-                ### 💡 Pro Tips
+                ### 📜 Version Lore
                 
-                - Try different recommendation methods
-                - Use the FAQ bot for quick answers
-                - Check Insights for popular genres
+                **Bookends AI v2.0**
+                
+                *The Enchanted Edition*
+                
+                Released: December 2024
+                
+                ---
+                
+                ### 💫 A Final Word
+                
+                *"A reader lives a thousand lives before they die..."*
+                
+                — George R.R. Martin
                 """)
         
         # Footer
-        st.markdown("---")
         st.markdown("""
         <div class="footer">
-            <p>© 2024 Bookends AI Book Recommendation System | Made with ❤️ for book lovers</p>
-            <p style="font-size: 0.8rem;">Powered by AI | Your next favorite book is just a click away</p>
+            <p>📖 *Every book is a new adventure waiting to begin* 📖</p>
+            <p style="font-size: 0.8rem;">© 2024 Bookends Enchanted Bookshelf | Where stories come alive</p>
+            <p style="font-size: 0.7rem;">✨ May your next read be magical ✨</p>
         </div>
         """, unsafe_allow_html=True)
     
     else:
-        st.error("Failed to load data. Please refresh the page.")
+        st.error("The magical library is sleeping... Please refresh the page to wake it!")
 
-# ==================== RUN APP ====================
+# ==================== RUN THE MAGIC ====================
 if __name__ == "__main__":
     main()
