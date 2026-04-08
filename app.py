@@ -627,7 +627,7 @@ def main():
         # Storybook Header
         st.markdown("""
         <div class="main-header">
-            <h1>📖 The Enchanted Bookshelf</h1>
+            <h1>📖 The Enchanted Bookshelf- Bookends UAE</h1>
             <p>Where every book holds a magical story waiting to be discovered...</p>
         </div>
         """, unsafe_allow_html=True)
